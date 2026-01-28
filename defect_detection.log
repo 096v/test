@@ -1,0 +1,18 @@
+2026-01-28 17:58:17,676 - WARNING - 加载配置文件失败: Expecting value: line 1 column 1 (char 0)
+2026-01-28 17:58:17,676 - INFO - 加载YOLO模型: weights/best.pt
+2026-01-28 17:58:17,818 - INFO - 模型加载成功
+2026-01-28 17:58:17,818 - INFO - 打开视频文件: path/to/your/video.mp4
+2026-01-28 17:58:18,014 - ERROR - 无法打开视频文件: path/to/your/video.mp4
+2026-01-28 17:58:18,014 - ERROR - 程序运行失败: 无法打开视频文件: path/to/your/video.mp4
+2026-01-28 17:58:22,286 - WARNING - 加载配置文件失败: Expecting value: line 1 column 1 (char 0)
+2026-01-28 17:58:22,287 - INFO - 加载YOLO模型: weights/best.pt
+2026-01-28 17:58:22,421 - INFO - 模型加载成功
+2026-01-28 17:58:22,422 - INFO - 打开视频文件: MyVideo_1.mp4
+2026-01-28 17:58:22,617 - ERROR - 无法打开视频文件: MyVideo_1.mp4
+2026-01-28 17:58:22,617 - ERROR - 程序运行失败: 无法打开视频文件: MyVideo_1.mp4
+2026-01-28 17:58:26,906 - WARNING - 加载配置文件失败: Expecting value: line 1 column 1 (char 0)
+2026-01-28 17:58:26,907 - INFO - 加载YOLO模型: weights/best.pt
+2026-01-28 17:58:27,039 - INFO - 模型加载成功
+2026-01-28 17:58:27,042 - INFO - 打开视频文件: MyVideo_1.mp4
+2026-01-28 17:58:27,232 - ERROR - 无法打开视频文件: MyVideo_1.mp4
+2026-01-28 17:58:27,232 - ERROR - 程序运行失败: 无法打开视频文件: MyVideo_1.mp4

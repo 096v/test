@@ -1,0 +1,255 @@
+{
+  "video_info": {
+    "path": "Video1.mp4",
+    "fps": 25.0,
+    "total_frames": 486,
+    "total_duration": 0.0
+  },
+  "detection_config": {
+    "model": "weights/best.pt",
+    "confidence_threshold": 0.3,
+    "iou_threshold": 0.5,
+    "max_lost_frames": 30,
+    "min_duration_frames": 30
+  },
+  "defects": [
+    {
+      "track_id": 3,
+      "defect_type": "TL",
+      "start_frame": 59,
+      "end_frame": 107,
+      "start_time": 2.36,
+      "end_time": 4.28,
+      "max_conf": 0.8620052933692932,
+      "start_frame_path": "frames\\track_3_start_59.jpg",
+      "best_frame_path": "frames\\track_3_best_60.jpg",
+      "ocr_text": "[start_frame_path] 任务名称/编号：陵水县主城区六水共治工程\n2023-10-270931：41\n检测地点：中山东路\nZ.1X\n检测日期：2023-10-2709：31：41\n起始井号-结束井号：S09HS0034-S09HS0033\n检测方向：顺流；管道类型：雨污\n管材：砖管管径：400*400mm\n检测单位：上海市政工程设计研究总院\n(集团)\n有限公司：检测人员王晗\nAP：-005 deg\nD：0.33M\nP：0.00PSI\n[best_frame_path] 任务名称/编号：陵水县主城区六水共治工程\n2023-10-27093141\n检测地点：中山东路\nZ1X\n检测日期：2023-10-2709：31：41\n起始井号-结束井号：S09HS0034-S09HS0033\n检测方向：顺流；管道类型：雨污；\n管材：砖管；管径：400*400mm\n检测单位：上海市政工程设计研究总院(集团)\n)有\n有限公司检测人员王晗\nAP：-005 deg\nD：0.33M\nP：0.00PSI",
+      "ai_summary": {
+        "任务名称": "陵水县主城区六水共治工程",
+        "检测地点": "中山东路",
+        "井号区间": "S09HS0034-S09HS0033",
+        "管材": "砖管",
+        "管径": "400*400mm",
+        "当前距离": "0.33M"
+      }
+    },
+    {
+      "track_id": 4,
+      "defect_type": "ZW",
+      "start_frame": 79,
+      "end_frame": 92,
+      "start_time": 3.16,
+      "end_time": 3.68,
+      "max_conf": 0.8106316924095154,
+      "ocr_text": "持续时间不足30帧，跳过分析",
+      "ai_summary": {
+        "note": "持续时间过短，未进行分析"
+      }
+    },
+    {
+      "track_id": 5,
+      "defect_type": "ZW",
+      "start_frame": 109,
+      "end_frame": 110,
+      "start_time": 4.36,
+      "end_time": 4.4,
+      "max_conf": 0.43941065669059753,
+      "ocr_text": "持续时间不足30帧，跳过分析",
+      "ai_summary": {
+        "note": "持续时间过短，未进行分析"
+      }
+    },
+    {
+      "track_id": 11,
+      "defect_type": "SL",
+      "start_frame": 143,
+      "end_frame": 144,
+      "start_time": 5.72,
+      "end_time": 5.76,
+      "max_conf": 0.5333471298217773,
+      "ocr_text": "持续时间不足30帧，跳过分析",
+      "ai_summary": {
+        "note": "持续时间过短，未进行分析"
+      }
+    },
+    {
+      "track_id": 12,
+      "defect_type": "SL",
+      "start_frame": 144,
+      "end_frame": 144,
+      "start_time": 5.76,
+      "end_time": 5.76,
+      "max_conf": 0.351680189371109,
+      "ocr_text": "持续时间不足30帧，跳过分析",
+      "ai_summary": {
+        "note": "持续时间过短，未进行分析"
+      }
+    },
+    {
+      "track_id": 13,
+      "defect_type": "SL",
+      "start_frame": 164,
+      "end_frame": 165,
+      "start_time": 6.5600000000000005,
+      "end_time": 6.6000000000000005,
+      "max_conf": 0.3657229542732239,
+      "ocr_text": "持续时间不足30帧，跳过分析",
+      "ai_summary": {
+        "note": "持续时间过短，未进行分析"
+      }
+    },
+    {
+      "track_id": 16,
+      "defect_type": "ZW",
+      "start_frame": 199,
+      "end_frame": 277,
+      "start_time": 7.96,
+      "end_time": 11.08,
+      "max_conf": 0.7679904103279114,
+      "start_frame_path": "frames\\track_16_start_199.jpg",
+      "best_frame_path": "frames\\track_16_best_228.jpg",
+      "ocr_text": "[start_frame_path] 任务名称/编号：陵水县主城区六水共治工程\n2023-10-2709：31：46\n检测地点：中山东路\nZ：5X\n检测日期：2023-10-2709：31：46\n起始井号-结束井号：S09HS0034-S09HS0033\n检测方向：顺流；管道类型：雨污：\n管材：砖管：管径：400*400mm：\n检测单位：上海市政工程设计研究总院(集团)有\n有限公司检测人员王晗\nAP：-005 deg\nD：10.03M\nP：0.00PSI\n[best_frame_path] 任务名称/编号：陵水县主城区六水共治工程\n2023-10-2709：31：49\n检测地点：中山东路\nZ：5X\n检测日期：2023-10-2709：31：49\n起始井号-结束井号：S09HS0034-S09HS0033\n检测方向：顺流；管道类型：雨污\n管材：砖管；管径：400*400mm；\n检测单位：上海市政工程设计研究总院(集团)\n有限公司：检测人员：王晗\nAP：-005 deg\nD：10.01M\nP：0.00PS\nSI",
+      "ai_summary": {
+        "任务名称": "陵水县主城区六水共治工程",
+        "检测地点": "中山东路",
+        "井号区间": "S09HS0034-S09HS0033",
+        "管材": "砖管",
+        "管径": "400*400mm",
+        "当前距离": "10.02M"
+      }
+    },
+    {
+      "track_id": 21,
+      "defect_type": "ZW",
+      "start_frame": 217,
+      "end_frame": 219,
+      "start_time": 8.68,
+      "end_time": 8.76,
+      "max_conf": 0.46888208389282227,
+      "ocr_text": "持续时间不足30帧，跳过分析",
+      "ai_summary": {
+        "note": "持续时间过短，未进行分析"
+      }
+    },
+    {
+      "track_id": 26,
+      "defect_type": "ZW",
+      "start_frame": 289,
+      "end_frame": 297,
+      "start_time": 11.56,
+      "end_time": 11.88,
+      "max_conf": 0.8430541753768921,
+      "ocr_text": "持续时间不足30帧，跳过分析",
+      "ai_summary": {
+        "note": "持续时间过短，未进行分析"
+      }
+    },
+    {
+      "track_id": 30,
+      "defect_type": "ZW",
+      "start_frame": 306,
+      "end_frame": 331,
+      "start_time": 12.24,
+      "end_time": 13.24,
+      "max_conf": 0.8536291718482971,
+      "ocr_text": "持续时间不足30帧，跳过分析",
+      "ai_summary": {
+        "note": "持续时间过短，未进行分析"
+      }
+    },
+    {
+      "track_id": 31,
+      "defect_type": "ZW",
+      "start_frame": 307,
+      "end_frame": 312,
+      "start_time": 12.280000000000001,
+      "end_time": 12.48,
+      "max_conf": 0.5431716442108154,
+      "ocr_text": "持续时间不足30帧，跳过分析",
+      "ai_summary": {
+        "note": "持续时间过短，未进行分析"
+      }
+    },
+    {
+      "track_id": 32,
+      "defect_type": "ZW",
+      "start_frame": 333,
+      "end_frame": 387,
+      "start_time": 13.32,
+      "end_time": 15.48,
+      "max_conf": 0.8133383393287659,
+      "start_frame_path": "frames\\track_32_start_333.jpg",
+      "best_frame_path": "frames\\track_32_best_337.jpg",
+      "ocr_text": "[start_frame_path] 任务名称/编号：陵水县主城区六水共治工程\n2023-10-2709：31：52\n检测地点：中山东路\nZ：5X\n检测日期：2023-10-2709：31：52\n起始井号-结束井号：S09HS0034-S09HS0033\n检测方向顺流，管道类型：雨污；\n管材：砖管；管径：400*400mm\n检测单位：上海市政工程设计研究总院\n(集团)\n有限公司检测人员：王晗\nAP：-005 deg\nD：10.02M\nP：0.00PS\nSI\n[best_frame_path] 任务名称/编号：陵水县主城区六水共治工程\n2023-10-2709：31：52\n检测地点：中山东路\nZ：5X\n检测日期：2023-10-2709：31：52\n起始井号-结束井号：S09HS0034-S09HS0033\n检测方向顺流，管道类型：雨污；\n管材：砖管，管径：400*400mm\n检测单位：上海市政工程设计研究总院(集团)有\n有限公司：检测人员：王晗\nAP：-005 deg\nD：10.02M\nP：0.00PS\nSI",
+      "ai_summary": {
+        "任务名称": "陵水县主城区六水共治工程",
+        "检测地点": "中山东路",
+        "井号区间": "S09HS0034-S09HS0033",
+        "管材": "砖管",
+        "管径": "400*400mm",
+        "当前距离": "10.02M"
+      }
+    },
+    {
+      "track_id": 33,
+      "defect_type": "ZW",
+      "start_frame": 344,
+      "end_frame": 349,
+      "start_time": 13.76,
+      "end_time": 13.96,
+      "max_conf": 0.6301907896995544,
+      "ocr_text": "持续时间不足30帧，跳过分析",
+      "ai_summary": {
+        "note": "持续时间过短，未进行分析"
+      }
+    },
+    {
+      "track_id": 34,
+      "defect_type": "ZW",
+      "start_frame": 389,
+      "end_frame": 399,
+      "start_time": 15.56,
+      "end_time": 15.96,
+      "max_conf": 0.4155302047729492,
+      "ocr_text": "持续时间不足30帧，跳过分析",
+      "ai_summary": {
+        "note": "持续时间过短，未进行分析"
+      }
+    },
+    {
+      "track_id": 35,
+      "defect_type": "ZW",
+      "start_frame": 404,
+      "end_frame": 419,
+      "start_time": 16.16,
+      "end_time": 16.76,
+      "max_conf": 0.7825453281402588,
+      "ocr_text": "持续时间不足30帧，跳过分析",
+      "ai_summary": {
+        "note": "持续时间过短，未进行分析"
+      }
+    },
+    {
+      "track_id": 37,
+      "defect_type": "ZW",
+      "start_frame": 439,
+      "end_frame": 440,
+      "start_time": 17.56,
+      "end_time": 17.6,
+      "max_conf": 0.7357723116874695,
+      "ocr_text": "持续时间不足30帧，跳过分析",
+      "ai_summary": {
+        "note": "持续时间过短，未进行分析"
+      }
+    }
+  ],
+  "summary": {
+    "total_defects": 16,
+    "analyzed_defects": 3,
+    "defect_types": {
+      "TL": 1,
+      "ZW": 12,
+      "SL": 3
+    }
+  }
+}
