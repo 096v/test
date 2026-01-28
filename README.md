@@ -51,7 +51,7 @@ ollama pull gemma3:4b
 
 ### 4. 初始化配置文件
 ```bash
-python Demo.py --create-config
+python Defect_detector.py --create-config
 ```
 
 ### 5. 编辑配置文件
@@ -93,7 +93,7 @@ python defect_detector.py --video path/to/your/video.mp4
 ### 命令行参数
 
 ```bash
-python Demo.py --help
+python Defect_detector.py --help
 ```
 
 | 参数 | 说明 | 默认值 |
@@ -282,7 +282,7 @@ def batch_process_videos(video_folder, output_folder):
         output_file = f"{output_folder}/report_{video_name}_{timestamp}.json"
         
         cmd = [
-            "python", "Demo.py",
+            "python", "Defect_detector.py",
             "--video", video,
             "--output", output_file
         ]
@@ -324,14 +324,14 @@ grep "已处理" defect_detection.log
 ```python
 # 测试OCR模块
 python -c "
-from Demo import aliyun_ocr
+from Defect_detector import aliyun_ocr
 result = aliyun_ocr('test_image.jpg')
 print('OCR结果:', result[:100] if result else '空结果')
 "
 
 # 测试AI服务
 python -c "
-from Demo import get_ai_summary
+from Defect_detector import get_ai_summary
 result = get_ai_summary('测试文本：某市管道检测')
 print('AI分析结果:', result)
 "
@@ -430,3 +430,4 @@ class BaiduOCR:
 4. 准备好视频和模型文件
 
 祝您使用愉快！ 🚀
+
