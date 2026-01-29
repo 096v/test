@@ -1,3 +1,4 @@
+# utils.py
 import base64
 import json
 import logging
@@ -9,6 +10,7 @@ import cv2
 import numpy as np
 from pathlib import Path
 from datetime import datetime
+from paddleocr import PaddleOCR
 
 logger = logging.getLogger(__name__)
 
@@ -96,95 +98,173 @@ def save_frame_with_metadata(frame, save_dir, filename, metadata=None):
     return str(save_path)
 
 
-def aliyun_ocr_api(image_path, config):
+class PaddleOCRWrapper:
+    """PaddleOCR包装类"""
+
+    def __init__(self, config=None):
+        """
+        初始化PaddleOCR
+
+        Args:
+            config: PaddleOCR配置
+        """
+        self.config = config or {}
+
+        # 设置环境变量解决可能的冲突
+        os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
+        # PaddleOCR配置参数
+        use_angle_cls = self.config.get("use_angle_cls", True)
+        lang = self.config.get("lang", "ch")
+        use_gpu = self.config.get("use_gpu", False)
+        gpu_mem = self.config.get("gpu_mem", 500)
+        cpu_threads = self.config.get("cpu_threads", 10)
+        det_db_thresh = self.config.get("det_db_thresh", 0.3)
+        det_db_box_thresh = self.config.get("det_db_box_thresh", 0.6)
+        drop_score = self.config.get("drop_score", 0.5)
+        show_log = self.config.get("show_log", False)
+
+        logger.info(f"初始化PaddleOCR: lang={lang}, use_gpu={use_gpu}, use_angle_cls={use_angle_cls}")
+
+        try:
+            self.ocr = PaddleOCR(
+                use_angle_cls=use_angle_cls,
+                lang=lang,
+                use_gpu=use_gpu,
+                gpu_mem=gpu_mem,
+                cpu_threads=cpu_threads,
+                det_db_thresh=det_db_thresh,
+                det_db_box_thresh=det_db_box_thresh,
+                drop_score=drop_score,
+                show_log=show_log
+            )
+            logger.info("PaddleOCR初始化成功")
+        except Exception as e:
+            logger.error(f"PaddleOCR初始化失败: {e}")
+            # 尝试简化配置初始化
+            try:
+                self.ocr = PaddleOCR(use_angle_cls=use_angle_cls, lang=lang, show_log=show_log)
+                logger.info("PaddleOCR使用简化配置初始化成功")
+            except Exception as e2:
+                logger.error(f"PaddleOCR简化初始化也失败: {e2}")
+                raise
+
+    def ocr_image(self, image_path):
+        """
+        对图片进行OCR识别
+
+        Args:
+            image_path: 图片路径或numpy数组
+
+        Returns:
+            str: 识别出的文本
+        """
+        try:
+            # 如果传入的是numpy数组，直接使用
+            if isinstance(image_path, np.ndarray):
+                result = self.ocr.ocr(image_path, cls=True)
+            else:
+                # 检查文件是否存在
+                if not os.path.exists(image_path):
+                    logger.error(f"图片文件不存在: {image_path}")
+                    return ""
+                result = self.ocr.ocr(image_path, cls=True)
+
+            if not result or not result[0]:
+                return ""
+
+            # 提取所有文本
+            texts = []
+            for line in result[0]:
+                if line and len(line) > 1:
+                    text = line[1][0]
+                    confidence = line[1][1] if len(line[1]) > 1 else 0.0
+                    # 根据置信度筛选
+                    if confidence >= self.config.get("min_confidence", 0.5):
+                        texts.append(text)
+                    else:
+                        logger.debug(f"低置信度文本跳过: {text} (置信度: {confidence:.3f})")
+
+            # 合并文本
+            ocr_result = "\n".join(texts)
+            logger.debug(f"OCR识别结果: {ocr_result[:100]}...")
+            return ocr_result
+
+        except Exception as e:
+            logger.error(f"OCR识别失败: {e}")
+            return ""
+
+    def ocr_frame(self, frame):
+        """
+        对视频帧进行OCR识别（直接传入numpy数组）
+
+        Args:
+            frame: OpenCV图像帧（numpy数组）
+
+        Returns:
+            str: 识别出的文本
+        """
+        try:
+            result = self.ocr.ocr(frame, cls=True)
+
+            if not result or not result[0]:
+                return ""
+
+            # 提取所有文本
+            texts = []
+            for line in result[0]:
+                if line and len(line) > 1:
+                    text = line[1][0]
+                    confidence = line[1][1] if len(line[1]) > 1 else 0.0
+                    # 根据置信度筛选
+                    if confidence >= self.config.get("min_confidence", 0.5):
+                        texts.append(text)
+
+            # 合并文本
+            ocr_result = "\n".join(texts)
+            return ocr_result
+
+        except Exception as e:
+            logger.error(f"帧OCR识别失败: {e}")
+            return ""
+
+
+# 全局OCR实例
+_paddle_ocr_instance = None
+
+
+def get_paddle_ocr_instance(config=None):
     """
-    调用阿里云OCR API
+    获取PaddleOCR实例（单例模式）
 
     Args:
-        image_path: 图片文件路径
+        config: OCR配置
+
+    Returns:
+        PaddleOCRWrapper实例
+    """
+    global _paddle_ocr_instance
+    if _paddle_ocr_instance is None:
+        _paddle_ocr_instance = PaddleOCRWrapper(config)
+    return _paddle_ocr_instance
+
+
+def paddle_ocr_api(image_path, config=None):
+    """
+    PaddleOCR API接口（兼容原有接口）
+
+    Args:
+        image_path: 图片文件路径或numpy数组
         config: OCR配置字典
 
     Returns:
         str: OCR识别结果文本
     """
-    # 检查配置
-    if not config.get("app_code") or "YOUR_APP_CODE" in config.get("app_code", ""):
-        logger.warning("阿里云OCR未配置或使用默认值，跳过识别")
-        return ""
-
-    # 检查文件是否存在
-    if not os.path.exists(image_path):
-        logger.error(f"图片文件不存在: {image_path}")
-        return ""
-
     try:
-        # 读取图片并编码
-        with open(image_path, "rb") as f:
-            img_b64 = base64.b64encode(f.read()).decode()
-
-        # 准备请求头
-        headers = {
-            "Authorization": f"APPCODE {config['app_code']}",
-            "Content-Type": "application/json; charset=UTF-8"
-        }
-
-        # 准备请求体
-        payload = {
-            "img": img_b64,
-            "prob": True,
-            "charInfo": False,
-            "rotate": True,
-            "table": False
-        }
-
-        # 发送请求
-        response = requests.post(
-            config["url"],
-            headers=headers,
-            data=json.dumps(payload),
-            timeout=config.get("timeout", 10)
-        )
-        response.raise_for_status()
-
-        # 解析响应
-        result = response.json()
-
-        # 不同格式的兼容处理
-        if result.get("success"):
-            # 格式1: 包含data.content
-            lines = result.get("data", {}).get("content", [])
-            if isinstance(lines, list):
-                return "\n".join(lines)
-
-        # 格式2: 包含words
-        words = result.get("words", []) or result.get("prism_wordsInfo", [])
-        if isinstance(words, list):
-            text_parts = []
-            for item in words:
-                if isinstance(item, dict):
-                    text_parts.append(item.get("word", ""))
-            return "\n".join(text_parts)
-
-        # 格式3: 直接返回文本
-        if "text" in result:
-            return result["text"]
-
-        logger.warning(f"无法解析OCR响应格式: {result}")
-        return ""
-
-    except requests.exceptions.Timeout:
-        logger.error("OCR请求超时")
-        return ""
-    except requests.exceptions.ConnectionError:
-        logger.error("OCR连接失败，请检查网络")
-        return ""
-    except requests.exceptions.HTTPError as e:
-        logger.error(f"OCR HTTP错误: {e}")
-        if e.response.status_code == 401:
-            logger.error("OCR认证失败，请检查APPCODE")
-        return ""
+        ocr_instance = get_paddle_ocr_instance(config)
+        return ocr_instance.ocr_image(image_path)
     except Exception as e:
-        logger.error(f"OCR处理异常: {e}")
+        logger.error(f"PaddleOCR处理异常: {e}")
         return ""
 
 

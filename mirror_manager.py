@@ -1,3 +1,4 @@
+# mirror_manager.py
 import cv2
 import numpy as np
 import logging
@@ -21,7 +22,7 @@ class MirrorManager:
         初始化镜像管理器
 
         Args:
-            ocr_func: OCR函数，接受图片路径返回文本
+            ocr_func: OCR函数，接受图片路径或numpy数组返回文本
             fps: 视频帧率
             config: 配置字典
         """
@@ -157,25 +158,21 @@ class MirrorManager:
         通过OCR验证镜像状态的合法性
 
         Args:
-            frame: 图像帧
+            frame: 图像帧（numpy数组）
 
         Returns:
             bool: 是否需要镜像翻转
         """
         self.stats['ocr_triggered'] += 1
 
-        # 保存原图
-        orig_path = self._save_temp_image(frame)
-
         try:
-            # 测试原图OCR
-            text_orig = self.ocr_func(orig_path)
+            # 测试原图OCR - 直接传入numpy数组
+            text_orig = self.ocr_func(frame)
             score_orig = self._calculate_ocr_score(text_orig)
 
             # 生成镜像图并测试
             flipped_frame = cv2.flip(frame, 1)
-            flipped_path = self._save_temp_image(flipped_frame)
-            text_flipped = self.ocr_func(flipped_path)
+            text_flipped = self.ocr_func(flipped_frame)
             score_flipped = self._calculate_ocr_score(text_flipped)
 
             logger.debug(f"OCR验证: 原方向={score_orig:.1f}, 镜像方向={score_flipped:.1f}")
@@ -186,14 +183,6 @@ class MirrorManager:
         except Exception as e:
             logger.warning(f"OCR验证失败: {e}")
             return False
-        finally:
-            # 清理临时文件
-            for path in [orig_path, 'flipped_path' if 'flipped_path' in locals() else None]:
-                if path and os.path.exists(path):
-                    try:
-                        os.unlink(path)
-                    except:
-                        pass
 
     def update_and_correct(self, frame: np.ndarray, frame_idx: int) -> np.ndarray:
         """

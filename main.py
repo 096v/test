@@ -1,3 +1,4 @@
+#main.py
 import os
 import sys
 import time
@@ -11,7 +12,7 @@ from ultralytics import YOLO
 # 导入自定义模块
 from config_loader import load_config, create_config_file, validate_config
 from mirror_manager import MirrorManager
-from utils import aliyun_ocr_api, get_ai_summary_api, save_frame_with_metadata, NumpyEncoder
+from utils import get_ai_summary_api, save_frame_with_metadata, NumpyEncoder, paddle_ocr_api
 
 
 # 创建自定义的StreamHandler以处理Windows编码问题
@@ -70,6 +71,9 @@ def setup_logging():
 # 设置日志
 logger = setup_logging()
 
+
+# main.py (部分修改)
+# ... 前面的导入和类定义保持不变 ...
 
 class DefectDetector:
     """管道缺陷智能检测器"""
@@ -137,9 +141,9 @@ class DefectDetector:
         if self.mirror_enabled:
             logger.info("初始化镜像自动纠正系统...")
 
-            # 创建OCR函数闭包
+            # 创建OCR函数闭包 - 修改为使用PaddleOCR
             def ocr_wrapper(image_path):
-                return aliyun_ocr_api(image_path, self.config["aliyun_ocr"])
+                return paddle_ocr_api(image_path, self.config["paddle_ocr"])
 
             self.mirror_manager = MirrorManager(
                 ocr_func=ocr_wrapper,
@@ -157,7 +161,6 @@ class DefectDetector:
         self.min_duration_frames = self.config["min_duration_frames"]
 
         logger.info("缺陷检测器初始化完成")
-
     def save_frame_image(self, track_id, tag, frame):
         """保存帧图像"""
         filename = f"track_{track_id}_{tag}_{self.current_frame_idx}.jpg"
@@ -183,7 +186,8 @@ class DefectDetector:
             path = track.get(key)
             if path and os.path.exists(path):
                 try:
-                    text = aliyun_ocr_api(path, self.config["aliyun_ocr"])
+                    # 修改为使用PaddleOCR
+                    text = paddle_ocr_api(path, self.config["paddle_ocr"])
                     if text:
                         texts.append(f"[{key}] {text}")
                 except Exception as e:
@@ -197,7 +201,6 @@ class DefectDetector:
             track["ai_summary"] = get_ai_summary_api(ocr_text, self.config["ai_service"])
         else:
             track["ai_summary"] = {"error": "无OCR文本可分析"}
-
     def process_frame(self, frame):
         """处理单帧"""
         # 应用镜像纠正

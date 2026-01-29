@@ -1,10 +1,11 @@
-import os
+# config_loader.py
 import json
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
-# 默认配置
+# 默认配置 - 更新OCR配置部分
 DEFAULT_CONFIG = {
     "video_path": "MyVideo_1.mp4",
     "model_path": "weights/best.pt",
@@ -20,11 +21,17 @@ DEFAULT_CONFIG = {
         "energy_deviation_threshold": 3.0,
         "ocr_check_interval": 30
     },
-    "aliyun_ocr": {
-        "app_code": "YOUR_APP_CODE_HERE",
-        "app_key": "YOUR_APP_KEY_HERE",
-        "app_secret": "YOUR_APP_SECRET_HERE",
-        "url": "https://gjbsb.market.alicloudapi.com/ocrservice/advanced"
+    "paddle_ocr": {
+        "use_angle_cls": True,
+        "lang": "ch",
+        "use_gpu": False,
+        "gpu_mem": 500,
+        "cpu_threads": 10,
+        "det_db_thresh": 0.3,
+        "det_db_box_thresh": 0.6,
+        "drop_score": 0.5,
+        "min_confidence": 0.5,
+        "show_log": False
     },
     "ai_service": {
         "url": "http://127.0.0.1:11434/api/generate",
@@ -67,12 +74,24 @@ def load_config(config_path=None):
 
     # 环境变量覆盖（用于安全部署）
     env_mappings = {
-        "ALI_APP_CODE": ("aliyun_ocr", "app_code"),
-        "ALI_APP_KEY": ("aliyun_ocr", "app_key"),
-        "ALI_APP_SECRET": ("aliyun_ocr", "app_secret"),
+        # PaddleOCR相关配置
+        "PADDLE_OCR_USE_ANGLE_CLS": ("paddle_ocr", "use_angle_cls"),
+        "PADDLE_OCR_LANG": ("paddle_ocr", "lang"),
+        "PADDLE_OCR_USE_GPU": ("paddle_ocr", "use_gpu"),
+        "PADDLE_OCR_GPU_MEM": ("paddle_ocr", "gpu_mem"),
+        "PADDLE_OCR_CPU_THREADS": ("paddle_ocr", "cpu_threads"),
+        "PADDLE_OCR_DET_DB_THRESH": ("paddle_ocr", "det_db_thresh"),
+        "PADDLE_OCR_DET_DB_BOX_THRESH": ("paddle_ocr", "det_db_box_thresh"),
+        "PADDLE_OCR_DROP_SCORE": ("paddle_ocr", "drop_score"),
+        "PADDLE_OCR_MIN_CONFIDENCE": ("paddle_ocr", "min_confidence"),
+        "PADDLE_OCR_SHOW_LOG": ("paddle_ocr", "show_log"),
+
+        # AI服务配置
         "AI_SERVICE_URL": ("ai_service", "url"),
         "AI_MODEL": ("ai_service", "model"),
         "AI_TIMEOUT": ("ai_service", "timeout"),
+
+        # 其他配置
         "VIDEO_PATH": ("video_path", None),
         "MODEL_PATH": ("model_path", None),
         "MIRROR_DETECTION_ENABLED": ("mirror_detection", "enabled"),
@@ -91,10 +110,14 @@ def load_config(config_path=None):
             section, key = config_path_tuple
             if key:  # 嵌套配置
                 # 处理布尔值
-                if env_key == "MIRROR_DETECTION_ENABLED":
+                if env_key in ["PADDLE_OCR_USE_ANGLE_CLS", "PADDLE_OCR_USE_GPU",
+                               "PADDLE_OCR_SHOW_LOG", "MIRROR_DETECTION_ENABLED"]:
                     config[section][key] = env_value.lower() in ('true', '1', 'yes', 't')
                 # 处理数值类型
-                elif env_key in ["MIRROR_CALIBRATION_SECONDS", "MIRROR_DEVIATION_THRESHOLD",
+                elif env_key in ["PADDLE_OCR_GPU_MEM", "PADDLE_OCR_CPU_THREADS",
+                                 "PADDLE_OCR_DET_DB_THRESH", "PADDLE_OCR_DET_DB_BOX_THRESH",
+                                 "PADDLE_OCR_DROP_SCORE", "PADDLE_OCR_MIN_CONFIDENCE",
+                                 "MIRROR_CALIBRATION_SECONDS", "MIRROR_DEVIATION_THRESHOLD",
                                  "MIRROR_CHECK_INTERVAL", "YOLO_CONFIDENCE", "YOLO_IOU",
                                  "MAX_LOST_FRAMES", "MIN_DURATION_FRAMES", "AI_TIMEOUT"]:
                     try:
@@ -150,7 +173,7 @@ def validate_config(config):
         config: 配置字典
 
     Returns:
-        tuple: (是否有效, 错误信息列表)
+        tuple: (是否有效, 错误信息列表, 警告信息列表)
     """
     errors = []
     warnings = []
@@ -176,10 +199,19 @@ def validate_config(config):
     if "yolo_iou" in config and not (0 <= config["yolo_iou"] <= 1):
         errors.append(f"yolo_iou 必须在 0 到 1 之间，当前值: {config['yolo_iou']}")
 
-    # 检查 OCR 配置
-    ocr_config = config.get("aliyun_ocr", {})
-    if not ocr_config.get("app_code") or "YOUR_APP_CODE" in ocr_config.get("app_code", ""):
-        warnings.append("阿里云OCR未配置，将跳过OCR识别功能")
+    # 检查 PaddleOCR 配置
+    paddle_ocr_config = config.get("paddle_ocr", {})
+
+    # 检查语言配置
+    supported_langs = ["ch", "en", "fr", "de", "ko", "ja", "es", "pt", "ru", "ar", "hi"]
+    ocr_lang = paddle_ocr_config.get("lang", "ch")
+    if ocr_lang not in supported_langs:
+        warnings.append(f"PaddleOCR语言 '{ocr_lang}' 可能不支持，建议使用: {', '.join(supported_langs)}")
+
+    # 检查置信度阈值
+    min_confidence = paddle_ocr_config.get("min_confidence", 0.5)
+    if not (0 <= min_confidence <= 1):
+        errors.append(f"paddle_ocr.min_confidence 必须在 0 到 1 之间，当前值: {min_confidence}")
 
     # 检查 AI 服务配置
     ai_config = config.get("ai_service", {})
