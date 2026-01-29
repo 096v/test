@@ -14,14 +14,14 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('defect_detection.log'),
+        logging.FileHandler('../defect_detection.log'),
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
 
 # 默认配置文件路径
-DEFAULT_CONFIG_FILE = "config.json"
+DEFAULT_CONFIG_FILE = "../config.json"
 
 # 默认配置
 DEFAULT_CONFIG = {
