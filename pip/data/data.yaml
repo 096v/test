@@ -1,0 +1,6 @@
+path: /home/daihui/yolov10-main/PIPE_test
+train:  images/train
+val: images/val
+
+nc: 15
+names: ['PL', 'SG', 'CJ', 'ZW', 'BX', 'AJ', 'QF', 'CK', 'TJ', 'SL', 'FS', 'TL', 'CR', 'JG', 'CQ']
