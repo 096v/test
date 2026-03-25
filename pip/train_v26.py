@@ -1,167 +1,204 @@
-from ultralytics import YOLO,settings
+import cv2
+from ultralytics import YOLO, settings
+from torch.utils.tensorboard import SummaryWriter
 import os
+import glob
 import shutil
 import torch
 from datetime import datetime
-
+from torch.utils.tensorboard import SummaryWriter
 
 def check_tensorboard():
     """检测并提醒 TensorBoard 状态"""
     try:
         import tensorboard
-        print("✅ TensorBoard 已就绪。训练开始后，可通过命令查看: tensorboard --logdir runs/train")
+        print("TensorBoard 已就绪。训练开始后，可通过命令查看: tensorboard --logdir runs/train")
     except ImportError:
-        print("⚠️ 警告: 未检测到 TensorBoard 环境！")
+        print("警告: 未检测到 TensorBoard 环境！")
         print("建议在终端运行: pip install tensorboard 以便开启可视化监控。")
 
 
-def manage_checkpoints(project_dir, run_name):
+def get_latest_run_dir(project_dir, base_name):
+    """查找指定前缀的最新训练目录"""
+    search_pattern = os.path.join(project_dir, f"{base_name}*")
+    dirs = [d for d in glob.glob(search_pattern) if os.path.isdir(d)]
+    if not dirs:
+        return None
+    # 按文件夹的修改时间倒序排列，取最新修改的一个
+    dirs.sort(key=os.path.getmtime, reverse=True)
+    return dirs[0]
+
+
+def manage_checkpoints(project_dir, base_name):
     """
-    智能管理断点：检查、恢复或清理损坏文件
-    返回: resume_status (bool), model_path (str)
+    智能管理断点：查找最新目录，检查恢复或清理损坏文件
+    返回: is_resume (bool), model_path (str), current_run_name (str)
     """
-    weights_dir = os.path.join(project_dir, run_name, 'weights')
+    latest_dir = get_latest_run_dir(project_dir, base_name)
+
+    # 预设一个全新的时间戳 RUN_NAME，以备不时之需
+    timestamp = datetime.now().strftime('%m%d_%H%M')
+    new_run_name = f"{base_name}_{timestamp}"
+
+    if not latest_dir:
+        return False, 'yolo26m.pt', new_run_name
+
+    weights_dir = os.path.join(latest_dir, 'weights')
     last_pt = os.path.join(weights_dir, 'last.pt')
     best_pt = os.path.join(weights_dir, 'best.pt')
+    latest_run_name = os.path.basename(latest_dir)
 
     if not os.path.exists(last_pt):
-        return False, 'models/yolo26n.pt'  # 没有断点，从预训练模型开始
+        # 存在文件夹但没权重（可能刚启动就手动掐断了），算作新任务
+        return False, 'yolo26m.pt', new_run_name
 
-    print(f"🔍 发现历史训练记录，正在检查断点完整性: {last_pt}")
+    print(f"发现最新历史训练记录 [{latest_run_name}]，正在检查断点完整性...")
     try:
-        # 尝试加载检查点，看是否损坏
         ckpt = torch.load(last_pt, map_location='cpu')
         current_epoch = ckpt.get('epoch', -1)
         total_epochs = ckpt.get('args', {}).get('epochs', 250)
 
         if current_epoch >= total_epochs - 1:
             print("=" * 70)
-            print(f"🎉 该任务已完成训练！最佳权重位于: {best_pt}")
+            print(f"该任务已完成训练！最佳权重位于: {best_pt}")
             print("=" * 70)
-            exit(0)  # 已完成则直接退出
+            exit(0)
 
-        print(f"✅ 断点完好，准备从第 {current_epoch + 1} 轮恢复训练...")
-        return True, last_pt
+        print(f"断点完好，准备从第 {current_epoch + 1} 轮恢复训练...")
+        # 恢复训练时，返回旧的目录名，YOLO会自动在旧目录续写日志
+        return True, last_pt, latest_run_name
 
     except Exception as e:
-        print(f"❌ 警告: last.pt 断点已损坏 ({str(e)})")
-        # 自动备份/清理损坏文件
+        print(f"警告: last.pt 断点已损坏 ({str(e)})")
         corrupted_path = last_pt + f".corrupted_{datetime.now().strftime('%Y%m%d%H%M')}"
         shutil.move(last_pt, corrupted_path)
-        print(f"♻️ 已将损坏的断点隔离至: {corrupted_path}")
+        print(f"已将损坏的断点隔离至: {corrupted_path}")
 
-        # 尝试使用 best.pt 抢救
         if os.path.exists(best_pt):
-            print("💡 发现 best.pt，尝试从最佳验证点恢复训练...")
-            return True, best_pt
+            print("发现 best.pt，尝试从最佳验证点恢复训练...")
+            return True, best_pt, latest_run_name
 
-        print("⚠️ 未找到可用的替代权重，将作为全新任务重新开始训练。")
-        return False, 'yolo26n.pt'
+        print("未找到可用的替代权重，将生成新目录重新开始训练。")
+        return False, 'yolo26m.pt', new_run_name
 
 
 def train_sewer_v26():
-    """
-    训练 v26 版本 - 管道缺陷检测 (集成断点与TensorBoard管理)
-    """
-    # 【新增：强制激活 TensorBoard 底层开关】
+    """训练 v26 版本 - 管道缺陷检测"""
     settings.update({'tensorboard': True})
     os.environ['ULTRALYTICS_TENSORBOARD'] = 'True'
-    
-    # 基础路径配置
+
     PROJECT_DIR = 'runs/train'
-    RUN_NAME = 'data_v26'  # 如果需要每次独立比对，可改为 f'data_v26_{datetime.now().strftime("%m%d_%H%M")}'
+    BASE_NAME = 'data_v26-1'  # 你的基础前缀
 
-
-
-
-    # 1. 检测 TensorBoard
     check_tensorboard()
 
-    # 2. 智能处理断点与模型初始化
-    is_resume, start_model_path = manage_checkpoints(PROJECT_DIR, RUN_NAME)
+    # 动态获取模型路径和本次训练要使用的文件夹名称
+    is_resume, start_model_path, current_run_name = manage_checkpoints(PROJECT_DIR, BASE_NAME)
 
-    print(f"\n🚀 正在初始化 YOLOv26 模型 (载入: {start_model_path})...")
+    print(f"\n正在初始化 YOLOv26 模型 (载入: {start_model_path})...")
     model = YOLO(start_model_path)
 
-    # 如果是恢复训练，直接调用 resume，无需再传一大堆超参数
     if is_resume:
+        # 恢复训练时 Ultralytics 会自动读取原来的 args，直接 run 即可
         model.train(resume=True)
         return
 
-    # 3. 全新训练的超参数配置
+    # 全新训练的超参数配置
     cfg = dict(
-        data='data/data.yaml',
+        data='merged_dataset/data.yaml',
 
-        # 基础参数
         epochs=250,
-        batch=4,
+        batch=16,
         imgsz=640,
-        rect=True,
+        rect=False,
         device='0,1',
         workers=8,
 
-        # 路径与日志管理
         project=PROJECT_DIR,
-        name=RUN_NAME,
-        exist_ok=True,  # 允许覆盖/追加到当前目录，方便 TensorBoard 统一读取
+        name=current_run_name,
+        exist_ok=True,
         save_period=5,
-        patience=30,
-        plots=True,  # 强制生成可视化图表
-        save=True,  # 强制保存权重与日志
+        patience=50,
+        plots=True,
+        save=True,
 
-        # 优化器
         optimizer='AdamW',
         lr0=0.001,
         lrf=0.01,
         momentum=0.937,
         weight_decay=0.0005,
-        warmup_epochs=5.0,  # [优化建议] 延长 warmup 平稳适应管道特征
-        warmup_momentum=0.8,
-        warmup_bias_lr=0.01,
+        warmup_epochs=5.0,
         cos_lr=True,
 
-        # 数据增强 (针对管道光照与水雾)
-        mosaic=1.0,
-        close_mosaic=30,  # [优化建议] 提前关闭 mosaic，强化真实分布学习
+        #  数据增强
+        mosaic=1.0,  # 保持高强度 mosaic 以处理小目标缺陷
+        close_mosaic=20,  # 最后 20 轮关闭 mosaic 以精细化收敛
         mixup=0.1,
-        copy_paste=0.1,
-        scale=0.7,
-        degrees=15.0,  # [优化建议] 模拟管道机器人爬行倾斜
+        copy_paste=0.1,  # 增加物体复制，解决样本不平衡
+        scale=0.5,
+        degrees=10.0,
         translate=0.1,
         hsv_h=0.015,
-        hsv_s=0.8,  # [优化建议] 增强饱和度扰动
-        hsv_v=0.6,  # [优化建议] 增强亮度扰动，对抗手电筒效应
+        hsv_s=0.7,
+        hsv_v=0.5,
         fliplr=0.5,
 
-        # 损失函数与标签
+        #  核心优化
         box=7.5,
-        cls=2.5,
-        dfl=2.0,  # [优化建议] 加大 DFL 权重，解决边界模糊
-        label_smoothing=0.15,
+        cls=1.5,
+        dfl=2.0,
+        label_smoothing=0.005,
+        dropout=0.1,
 
-        # 其他检测参数
+        #  检测控制
         amp=True,
         val=True,
         cache='ram',
         iou=0.4,
-        conf=0.001,
-        max_det=500,
+        max_det=100,
     )
 
     print(f"\n{'=' * 70}")
-    print(f"🔥 YOLOv26 训练正式启动:")
-    print(f"  模式: End-to-End (NMS-Free)")
-    print(f"  日志: {os.path.join(PROJECT_DIR, RUN_NAME)}")
+    print(f"YOLOv26 训练正式启动:")
+    print(f"  模式: {'断点续训' if is_resume else '全新训练'}")
+    print(f"  日志目录: {os.path.join(PROJECT_DIR, current_run_name)}")
     print(f"{'=' * 70}")
 
-    # 开始训练
+    def on_train_epoch_end(trainer):
+        """自定义回调：将 YOLO 保存的图片推送到 TensorBoard"""
+        tb_writer = None
+        # 寻找 TensorBoard 的 Writer 实例
+        for logger in trainer.loggers.values():
+            if isinstance(logger, SummaryWriter):
+                tb_writer = logger
+                break
+                
+        if tb_writer:
+            # 在第 1 轮结束时，抓取训练集 batch 图像（通常只生成一次）
+            if trainer.epoch == 0:
+                img_path = os.path.join(trainer.save_dir, 'train_batch0.jpg')
+                if os.path.exists(img_path):
+                    img = cv2.imread(img_path)
+                    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) # OpenCV 默认 BGR，转为 RGB
+                    tb_writer.add_image('Training Data/Batch 0', img, trainer.epoch, dataformats='HWC')
+                    
+            # 定期（如每 10 轮）抓取验证集预测图像
+            if trainer.epoch % 10 == 0:
+                pred_path = os.path.join(trainer.save_dir, f'val_batch0_pred.jpg')
+                if os.path.exists(pred_path):
+                    img = cv2.imread(pred_path)
+                    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                    tb_writer.add_image('Validation/Predictions', img, trainer.epoch, dataformats='HWC')
+
+    # 注册回调
+    model.add_callback("on_train_epoch_end", on_train_epoch_end)
+
     model.train(**cfg)
 
-    # 验证
-    print('\n📈 开始 v26 性能验证...')
+    print('\n开始 v26 性能验证...')
     metrics = model.val(data=cfg['data'])
 
-    print(f"\n📊 v26 验证结果 (End-to-End):")
+    print(f"\nv26 验证结果:")
     print(f"  mAP@0.5      : {metrics.box.map50:.4f}")
     print(f"  mAP@0.5:0.95 : {metrics.box.map:.4f}")
     print("=" * 70)
