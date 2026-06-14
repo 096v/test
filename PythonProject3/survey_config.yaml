@@ -1,0 +1,95 @@
+# 问卷星自动化配置文件
+
+# 全局配置
+settings:
+  url: "https://v.wjx.cn/vm/PyKgkYl.aspx#"
+  submit_selector: "#ctlNext"
+  success_keyword: "您的答卷已经提交"
+
+# 题目列表（按顺序或直接按ID匹配）
+questions:
+  - id: "div1"
+    type: "dropdown"
+    desc: "第1题：下拉框"
+
+  - id: "div2"
+    type: "radio"
+    desc: "第2题：单选"
+
+  - id: "div3"
+    type: "checkbox"
+    max_choices: 2
+    desc: "第3题：多选（最多选2个）"
+
+  - id: "div4"
+    type: "radio"
+    desc: "第4题"
+
+  - id: "div5"
+    type: "checkbox"
+    max_choices: 3
+    desc: "第5题"
+
+  - id: "div6"
+    type: "radio"
+    desc: "第6题"
+
+  - id: "div7"
+    type: "checkbox"
+    desc: "第7题"
+
+  - id: "div8"
+    type: "matrix"
+    desc: "第8题：矩阵题"
+
+  - id: "div9"
+    type: "checkbox"
+    desc: "第9题"
+
+  - id: "div10"
+    type: "radio"
+    desc: "第10题"
+
+  - id: "div11"
+    type: "checkbox"
+    desc: "第11题"
+
+  - id: "div12"
+    type: "sort"
+    desc: "第12题：排序题"
+
+  - id: "div13"
+    type: "radio"
+    desc: "第13题"
+
+  - id: "div14"
+    type: "matrix"
+    desc: "第14题：矩阵题"
+
+  - id: "div15"
+    type: "checkbox"
+    desc: "第15题"
+
+  - id: "div16"
+    type: "checkbox"
+    desc: "第16题"
+
+  - id: "div17"
+    type: "radio"
+    desc: "第17题"
+
+  # 填空题群组
+  - id: "div18"
+    type: "text"
+    input_id: "q18"
+    desc: "第18题：填空"
+
+  - id: "div19"
+    type: "text"
+    input_id: "q19"
+    desc: "第19题：填空"
+
+  - id: "div20"
+    type: "text"
+    input_id: "q20"
+    desc: "第20题：填空"
