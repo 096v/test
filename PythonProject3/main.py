@@ -1,8 +1,5 @@
 from selenium.webdriver.common.by import By
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options as ChromeOptions
-from selenium.webdriver.edge.service import Service as EdgeService
 from selenium.webdriver.edge.options import Options as EdgeOptions
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -10,8 +7,6 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 import random
 import time
 import pyautogui
-import pytweening
-import math
 import yaml
 
 
@@ -23,7 +18,7 @@ def get_element_screen_pos(driver, element):
     
     # 计算元素中心点的屏幕坐标
     x = location['x'] + browser_pos['x'] + size['width'] // 2
-    y = location['y'] + browser_pos['y'] + size['height'] // 2 + 80  # 80为浏览器标题栏估算高度
+    y = location['y'] + browser_pos['y'] + size['height'] // 2 + 80
     return x, y
 
 def human_drag_trajectory(start_x, start_y, end_x, end_y, duration=None):
@@ -37,21 +32,14 @@ def human_drag_trajectory(start_x, start_y, end_x, end_y, duration=None):
     
     for i in range(1, steps + 1):
         progress = i / steps
-        # 使用 easeOutCubic 缓动函数，先快后慢
         ease_progress = 1 - (1 - progress) ** 3
-        
         target_x = start_x + (end_x - start_x) * ease_progress
         target_y = start_y + (end_y - start_y) * ease_progress
-        
-        # 添加随机抖动（垂直方向）
         jitter_y = random.gauss(0, 1.5)
         current_x = target_x
         current_y = target_y + jitter_y
-        
         pyautogui.moveTo(current_x, current_y)
         time.sleep(duration / steps)
-    
-    # 最后轻微回退再前进，模拟真实操作
     pyautogui.moveTo(end_x - random.randint(1, 3), end_y)
     time.sleep(random.uniform(0.05, 0.1))
     pyautogui.moveTo(end_x, end_y)
@@ -62,24 +50,15 @@ def human_drag_trajectory(start_x, start_y, end_x, end_y, duration=None):
 def huakuai_improved(driver):
     """改进版滑块验证：动态坐标+人类轨迹"""
     try:
-        # 尝试定位滑块元素
         slider_btn = WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, '#rectBottom'))
         )
-        
-        # 获取滑块的起始位置
         start_x, start_y = get_element_screen_pos(driver, slider_btn)
-        
-        # 点击并拖动滑块
         slider_btn.click()
         time.sleep(random.uniform(0.3, 0.6))
-        
-        # 计算目标位置（通常向右拖动约300-400像素）
         drag_distance = random.randint(280, 380)
         end_x = start_x + drag_distance
         end_y = start_y
-        
-        # 执行人类化拖拽
         human_drag_trajectory(start_x, start_y, end_x, end_y)
         
         time.sleep(random.uniform(1.0, 2.0))
@@ -87,7 +66,6 @@ def huakuai_improved(driver):
         
     except Exception as e:
         print(f"滑块验证出错: {e}")
-        # 降级方案：使用原始方法
         huakuai_fallback()
 
 def huakuai_fallback():
@@ -106,16 +84,10 @@ def huakuai_fallback():
 def handle_dropdown(driver, selector):
     """针对第1题下拉框：JS 注入强制选择法"""
     try:
-        # 1. 确保题目加载并滚动到视野中
         q_box = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", q_box)
         time.sleep(0.5)
-
-        # 2. 获取该题目的 ID (例如 q1)
         q_id = selector.replace('#div', 'q')
-        
-        # 3. 使用 JS 强制修改隐藏 select 标签的值并触发事件
-        # 逻辑：获取所有 option -> 随机选一个非空的索引 -> 设置并触发 change
         js_code = f"""
         var selectEl = document.querySelector('{q_id}');
         if (selectEl) {{
@@ -145,7 +117,6 @@ def handle_dropdown(driver, selector):
         if result:
             print(f" {selector} 通过 JS 强制选择成功: {result}")
         else:
-            # 最后的保底：如果 JS 找不到 select，尝试物理点击下拉框中心再按向下键
             print(f"️ {selector} JS 注入失败，尝试最后的物理保底")
             trigger = q_box.find_element(By.CSS_SELECTOR, ".select2-selection, .ui-select")
             trigger.click()
@@ -159,18 +130,15 @@ def handle_dropdown(driver, selector):
 
 
 def handle_matrix(driver, selector):
-    """处理第8题这种矩阵题"""
+    """处理矩阵题"""
     try:
         matrix_box = WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, selector))
         )
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", matrix_box)
-        # 每一行通常是一个 tr
         rows = matrix_box.find_elements(By.CSS_SELECTOR, "tr[id^='drv'], tr[sectype='1']")
         for row in rows:
-            # 找到这一行里所有的单选点 (a 标签或 td)
             btns = row.find_elements(By.CSS_SELECTOR, "a.jqradio, .ui-radio, td")
-            # 矩阵题通常第一列是文字，从第二列开始是选项
             choices = btns[1:] if len(btns) > 1 else btns
             if choices:
                 target = random.choice(choices)
@@ -182,25 +150,23 @@ def handle_matrix(driver, selector):
 
 
 def handle_sort_question(driver, selector):
-    """针对第12题排序题：打乱顺序全选"""
+    """排序题：打乱顺序全选"""
     try:
         q_box = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", q_box)
         time.sleep(0.5)
 
-        # 找到所有可点击的排序项
         items = q_box.find_elements(By.CSS_SELECTOR, "li, .ui-checkbox, .jqcheck")
         
         if items:
-            # 获取所有选项的索引并打乱，模拟随机排序意图
             indices = list(range(len(items)))
             random.shuffle(indices) 
             
             print(f"开始对 {selector} 进行排序，共 {len(items)} 项")
             for idx in indices:
-                # 依次点击每一个选项
+
                 driver.execute_script("arguments[0].click();", items[idx])
-                time.sleep(random.uniform(0.4, 0.7)) # 模拟思考时间
+                time.sleep(random.uniform(0.4, 0.7))
             print(f" {selector} 排序题（全选乱序）完成")
     except Exception as e:
         print(f" {selector} 排序题处理失败: {e}")
@@ -211,11 +177,9 @@ def handle_question(driver, selector, answer_type='radio', valid_ans_count=1):
     try:
         q_box = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, selector)))
         driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", q_box)
-        
-        # 暴力寻找该区域下所有可点的选项
+
         css = ".ui-radio, .ui-checkbox, .jqradio, .jqcheck, li"
         ans = q_box.find_elements(By.CSS_SELECTOR, css)
-        # 排除包含“其他”的干扰项
         ans = [a for a in ans if a.is_displayed() and "其他" not in a.text and a.text.strip()]
         
         if ans:
@@ -233,7 +197,6 @@ def scroll_to_element(driver, element):
 
 
 def tiankong(driver, num):
-    """填空题：扩展题库，增加随机性"""
     answers_pool = [
         "无", "好", "good", "不错", "还可以", "满意", "挺好",
         "暂无", "没有", "不清楚", "一般般", "还行吧", "挺好的",
@@ -245,8 +208,7 @@ def tiankong(driver, num):
     ]
     try:
         input_element = driver.find_element(By.CSS_SELECTOR, f'#q{num}')
-        # 随机选择答案，有时留空
-        if random.random() > 0.1:  # 90%概率填写
+        if random.random() > 0.1:
             answer = random.choice(answers_pool)
             input_element.send_keys(answer)
             time.sleep(random.uniform(0.3, 0.8))
@@ -349,27 +311,21 @@ def zonghe(times, config_path="survey_config.yaml"):
         option.add_argument('--no-sandbox')
         option.add_argument('--disable-dev-shm-usage')
         option.add_argument("--disable-infobars")  # 禁用信息栏
-        
-        # 随机User-Agent
+
         option.add_argument(f'user-agent={random.choice(user_agents)}')
         
         driver = webdriver.Edge(options=option)
-        
-        # 隐藏webdriver属性
+
         driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument',
                                {'source': 'Object.defineProperty(navigator, "webdriver", {get: () => undefined})'})
-        
-        # 随机窗口大小
         width = random.randint(1000, 1400)
         height = random.randint(800, 1000)
         driver.set_window_size(width, height)
-        
-        # 随机延迟后再开始
+
         time.sleep(random.uniform(2, 5))
 
         driver.get(url_survey)
-        
-        # 等待页面完全加载（尝试多种可能的标识）
+
         page_loaded = False
         for selector in ['#div1', '.ui-controlgroup', '[id^="q"]', '.field-ui']:
             try:
@@ -414,7 +370,6 @@ def zonghe(times, config_path="survey_config.yaml"):
         except Exception as e:
             print(f"调试信息获取失败: {e}")
 
-        # --- 答题核心逻辑（YAML 驱动）---
         execute_survey_from_yaml(driver, config)
 
         try:
@@ -437,8 +392,7 @@ def zonghe(times, config_path="survey_config.yaml"):
 
         print(f'已经提交了{i + 1}次问卷')
         driver.quit()
-        
-        # 每次提交后随机间隔，避免被封IP
+
         if i < times - 1:
             wait_time = random.randint(10, 30)
             print(f'等待 {wait_time} 秒后继续下一次提交...')
